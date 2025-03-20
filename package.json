@@ -1,0 +1,37 @@
+{
+  "name": "@bugstan/mcpxhub",
+  "version": "1.0.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "A MCP hub to redirect requests to local IDE extension instances",
+  "main": "dist/src/index.js",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bugstan/MCPxHub.git"
+  },
+  "bin": {
+    "mcpxhub": "dist/src/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/src/*.js",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "bundle": "pnpm build && pnpm esbuild dist/src/index.js --bundle --platform=node --format=esm --outfile=dist/bundle.js && shx chmod +x dist/bundle.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.7.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "esbuild": "^0.25.1",
+    "shx": "^0.4.0",
+    "typescript": "^5.8.2"
+  }
+}

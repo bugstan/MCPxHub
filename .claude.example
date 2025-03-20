@@ -1,0 +1,32 @@
+# test config
+{
+  "globalShortcut": "",
+  "mcpServers": {
+    "MCPxHub": {
+      "command": "node",
+      "args": [
+        "D:/DevSpace/Plugs/xHub.js"
+      ]
+    }
+  },
+  "env": {
+    "LOG_ENABLED": "true"
+  }
+}
+
+# release config
+{
+  "globalShortcut": "",
+  "mcpServers": {
+    "MCPxHub": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bugstan/mcpxhub"
+      ]
+    }
+  },
+  "env": {
+    "LOG_ENABLED": "true"
+  }
+}
