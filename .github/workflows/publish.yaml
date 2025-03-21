@@ -23,7 +23,8 @@ jobs:
             version: latest
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
+        # 移除了 --frozen-lockfile 标志
 
       - name: Build package with pnpm
         run: pnpm bundle

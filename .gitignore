@@ -5,7 +5,7 @@ yarn-debug.log
 yarn-error.log
 pnpm-debug.log
 .pnpm-store/
-pnpm-lock.yaml
+# pnpm-lock.yaml  # 注释掉这一行，允许提交lock文件
 
 # Build outputs
 dist/
@@ -48,7 +48,3 @@ temp/
 # Bundle analysis
 stats.html
 bundle-analysis.html
-
-# System files
-.DS_Store
-Thumbs.db
