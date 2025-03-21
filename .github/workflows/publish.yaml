@@ -25,10 +25,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Publish to NPM
+      - name: Build package with pnpm
+        run: pnpm bundle
+
+      - name: Publish to NPM using npm
         run: |
           export NODE_AUTH_TOKEN=$(echo "${{ secrets.NPM_TOKEN }}" | tr -d '\n')
-          pnpm publish --no-git-checks --access public --provenance
+          npm publish --access public --provenance
         continue-on-error: true
 
       - name: Upload npm logs
