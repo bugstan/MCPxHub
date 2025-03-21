@@ -1,6 +1,6 @@
 {
   "name": "@bugstan/mcpxhub",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publishConfig": {
     "access": "public"
   },
@@ -10,19 +10,38 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bugstan/MCPxHub.git"
+    "url": "git+https://github.com/bugstan/MCPxHub.git"
   },
+  "keywords": [
+    "mcp",
+    "claude",
+    "ai",
+    "ide",
+    "jetbrains",
+    "vscode"
+  ],
+  "author": "Bugstan",
+  "bugs": {
+    "url": "https://github.com/bugstan/MCPxHub/issues"
+  },
+  "homepage": "https://github.com/bugstan/MCPxHub#readme",
   "bin": {
     "mcpxhub": "dist/src/index.js"
   },
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "scripts": {
     "build": "tsc && shx chmod +x dist/src/*.js",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "bundle": "pnpm build && pnpm esbuild dist/src/index.js --bundle --platform=node --format=esm --outfile=dist/bundle.js && shx chmod +x dist/bundle.js"
+    "bundle": "pnpm build && esbuild dist/src/index.js --bundle --platform=node --format=esm --outfile=dist/bundle.js && shx chmod +x dist/bundle.js",
+    "bundle:npm": "npm run build && esbuild dist/src/index.js --bundle --platform=node --format=esm --outfile=dist/bundle.js && shx chmod +x dist/bundle.js",
+    "prepublishOnly": "npm run bundle:npm",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.7.0",

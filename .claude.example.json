@@ -1,0 +1,16 @@
+{
+  "globalShortcut": "",
+  "mcpServers": {
+    "MCPxHub": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bugstan/mcpxhub"
+      ],
+      "env": {
+        "LOG_ENABLED": "true",
+        "IDE_TYPE": "jetbrains"
+      }
+    }
+  }
+}

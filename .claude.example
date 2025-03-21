@@ -1,12 +1,16 @@
-# test config
+# clade desktop config file: claude_desktop_config.json
+# local test config
 {
   "globalShortcut": "",
   "mcpServers": {
     "MCPxHub": {
       "command": "node",
       "args": [
-        "D:/DevSpace/Plugs/xHub.js"
-      ]
+        "/yourpath/bundle.js"
+      ],
+      "env": {
+        "IDE_TYPE": "vscode"
+      }
     }
   },
   "env": {
@@ -23,7 +27,10 @@
       "args": [
         "-y",
         "@bugstan/mcpxhub"
-      ]
+      ],
+      "env": {
+        "IDE_TYPE": "jetbrains"
+      }
     }
   },
   "env": {

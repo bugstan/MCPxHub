@@ -37,7 +37,7 @@ AI Assistant <--MCP Protocol--> MCPxHub <--HTTP Protocol--> MCP Server (IDE plug
 - **Development Language**: TypeScript 5.3+
 - **Runtime Environment**: Node.js (ES Modules)
 - **Build Tool**: TypeScript compiler (tsc)
-- **Package Manager**: pnpm
+- **Package Manager**: npm (or pnpm)
 - **Core Dependencies**:
   - `@modelcontextprotocol/sdk`: MCP protocol SDK
   - `node-fetch`: HTTP request library
@@ -57,29 +57,60 @@ The middleware uses a multi-level strategy to automatically discover and connect
 Implementation in the `findWorkingIDEEndpoint()` function:
 ```typescript
 async function findWorkingIDEEndpoint(): Promise<string> {
+    log(`Attempting to find a working ${IDE_TYPE ? IDE_TYPE.toUpperCase() : 'IDE'} endpoint... (Attempt ${retryCount + 1}/${MAX_RETRY_COUNT})`);
+
     // 1. Priority use of specified port
     if (MCP_SERVER_PORT) {
-        const testEndpoint = `http://${HOST}:${MCP_SERVER_PORT}/api`;
+        log(`MCP_SERVER_PORT is set to ${MCP_SERVER_PORT}. Testing this port first.`);
+        const testEndpoint = `http://${MCP_SERVER}:${MCP_SERVER_PORT}/api`;
         if (await testListTools(testEndpoint)) {
+            success(`MCP_SERVER_PORT ${MCP_SERVER_PORT} is working - using endpoint ${testEndpoint}`);
             return testEndpoint;
+        } else {
+            warn(`Specified MCP_SERVER_PORT=${MCP_SERVER_PORT} is not responding correctly. Will retry later.`);
         }
     }
 
     // 2. Use cached endpoint (if still available)
     if (cachedEndpoint != null && await testListTools(cachedEndpoint)) {
-        return cachedEndpoint
+        debug('Using cached endpoint, it\'s still working');
+        return cachedEndpoint;
     }
 
-    // 3. Scan port range
-    const portRange = PORT_RANGES[IDE_TYPE];
+    // 3. Scan port range based on IDE_TYPE
+    let portRange;
+    
+    if (!isValidIDEType(IDE_TYPE)) {
+        warn(`Invalid or missing IDE_TYPE: ${IDE_TYPE}. Will try JetBrains IDE ports as default.`);
+        portRange = PORT_RANGES.jetbrains;
+    } else {
+        portRange = PORT_RANGES[IDE_TYPE];
+    }
+    
+    log(`Scanning port range: ${portRange.start}-${portRange.end}`);
+
     for (let port = portRange.start; port <= portRange.end; port++) {
-        const candidateEndpoint = `http://${HOST}:${port}/api`;
-        if (await testListTools(candidateEndpoint)) {
+        const candidateEndpoint = `http://${MCP_SERVER}:${port}/api`;
+        debug(`Testing port ${port}...`);
+        const isWorking = await testListTools(candidateEndpoint);
+        if (isWorking) {
+            success(`Found working endpoint at ${candidateEndpoint}`);
             return candidateEndpoint;
         }
     }
 
-    throw new Error(`No working ${IDE_TYPE.toUpperCase()} endpoint found...`);
+    // 4. Handle retry/failure cases
+    retryCount++;
+    if (retryCount >= MAX_RETRY_COUNT) {
+        error(`Reached maximum retry count (${MAX_RETRY_COUNT}). No working endpoint found.`);
+        throw new Error(`No working endpoint found after ${MAX_RETRY_COUNT} attempts.`);
+    } else if (hasEverConnected) {
+        warn(`Connection lost. Previously connected but now not responding. Will retry.`);
+        throw new Error(`Connection lost. Waiting for reconnection...`);
+    } else {
+        warn(`No working endpoint found in range ${portRange.start}-${portRange.end}. Will retry in 10 seconds.`);
+        throw new Error(`Waiting for IDE to start (Attempt ${retryCount}/${MAX_RETRY_COUNT})...`);
+    }
 }
 ```
 
@@ -110,7 +141,7 @@ The middleware uses `@modelcontextprotocol/sdk` to create a server instance and 
 #### Communication with MCP Server
 - **Protocol**: HTTP
 - **Connection Type**: Short connection, request-response mode
-- **Endpoint Format**: `http://${HOST}:${PORT}/api/mcp/*`
+- **Endpoint Format**: `http://${MCP_SERVER}:${PORT}/api/mcp/*`
 - **Endpoint Discovery**: Automatically scan ports for MCP Server instances
 
 #### Communication with Client
@@ -124,7 +155,7 @@ MCP x Hub as a client sends HTTP requests to MCP Server:
 
 #### 1. Get Tool List
 
-- **URL**: `http://${HOST}:${PORT}/api/mcp/list_tools`
+- **URL**: `http://${MCP_SERVER}:${PORT}/api/mcp/list_tools`
 - **Method**: GET
 - **Function**: Get all tools supported by MCP Server
 - **Response Format**: JSON object
@@ -149,7 +180,7 @@ MCP x Hub as a client sends HTTP requests to MCP Server:
 
 #### 2. Tool Call
 
-- **URL**: `http://${HOST}:${PORT}/api/mcp/${toolName}`
+- **URL**: `http://${MCP_SERVER}:${PORT}/api/mcp/${toolName}`
 - **Method**: POST
 - **Request Headers**: 
   ```
@@ -282,24 +313,23 @@ The project code is organized concisely, with main functionality concentrated in
 
 ```bash
 # Install prerequisites
-brew install node pnpm  # macOS
-# Or use other platform installation methods
+npm install -g npm  # Update npm if needed
 
 # Install project dependencies
-pnpm install
+npm install
 ```
 
 ### Building the Project
 
 ```bash
-pnpm build
+npm run build
 ```
 
 ### Development Mode
 
 Use watch mode during development to automatically recompile changed files:
 ```bash
-pnpm watch
+npm run watch
 ```
 
 ### Logging System

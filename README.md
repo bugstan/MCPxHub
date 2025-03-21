@@ -2,6 +2,48 @@
 
 A middleware that forwards MCP (Model Context Protocol) requests from clients (like Claude Desktop) to local IDE extension instances (JetBrains or VS Code). It supports automatic discovery of IDE endpoints, tool list update detection, and tool call forwarding.
 
+[![npm version](https://img.shields.io/npm/v/@bugstan/mcpxhub.svg)](https://www.npmjs.com/package/@bugstan/mcpxhub)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Quick Start
+
+1. **Install MCP x Hub**:
+   ```bash
+   npm install -g @bugstan/mcpxhub
+   ```
+
+2. **Install Required IDE Plugin**:
+   - For VS Code: [ggMCP4VSCode](https://github.com/bugstan/ggMCP4VSCode)
+   - For JetBrains IDEs: [MCP Server Plugin](https://github.com/bugstan/mcp-server-plugin)
+
+3. **Configure Claude Desktop**:
+   
+   Edit your Claude Desktop config file (typically `claude_desktop_config.json`):
+   ```json
+   {
+     "globalShortcut": "",
+     "mcpServers": {
+       "MCPxHub": {
+         "command": "npx",
+         "args": [
+           "-y",
+           "@bugstan/mcpxhub"
+         ],
+         "env": {
+           "LOG_ENABLED": "true",
+           "IDE_TYPE": "jetbrains"
+         }
+       }
+     }
+   }
+   ```
+
+4. **Start your IDE** (JetBrains or VS Code) with the MCP Server plugin installed
+
+5. **Launch Claude Desktop** - It will automatically start MCP x Hub and connect to your IDE
+
+For more detailed configuration options, see the [Environment Variable Configuration](#environment-variable-configuration) section below.
+
 ## Features
 
 - Automatic IDE endpoint discovery
@@ -10,30 +52,54 @@ A middleware that forwards MCP (Model Context Protocol) requests from clients (l
 - Detailed logging and error handling
 - Automatic reconnection mechanism, waits for IDE to start
 
+## Required IDE Plugins
+
+MCP x Hub requires an MCP server plugin installed in your IDE to function:
+
+### VS Code Plugin
+- **Plugin**: [ggMCP4VSCode](https://github.com/bugstan/ggMCP4VSCode)
+- **Features**: Implements MCP server in VS Code, allowing communication with Claude Desktop through MCP x Hub
+
+### JetBrains Plugin
+- **Plugin**: [MCP Server Plugin](https://github.com/bugstan/mcp-server-plugin)
+- **Compatible IDEs**: IntelliJ IDEA, WebStorm, PyCharm, PhpStorm, and other JetBrains IDEs
+- **Features**: Implements MCP server in JetBrains IDEs, enabling Claude integration
+
 ## Installation
 
-Recommended using pnpm:
-
+### NPM Package (Recommended)
 ```bash
-pnpm install
+# Global installation
+npm install -g @bugstan/mcpxhub
+
+# Or as a project dependency
+npm install @bugstan/mcpxhub
 ```
 
-Or using npm:
+### From Source
 
 ```bash
+# Clone the repository
+git clone https://github.com/bugstan/MCPxHub.git
+cd MCPxHub
+
+# Install dependencies
 npm install
+
+# Build the project
+npm run build
 ```
 
 ## Building the Project
 
 ```bash
-pnpm build
+npm run build
 ```
 
 ## Bundling into a Single File
 
 ```bash
-pnpm bundle
+npm run bundle
 ```
 
 The bundled file will be located at `dist/bundle.js`.
@@ -42,6 +108,7 @@ The bundled file will be located at `dist/bundle.js`.
 
 ### Method 1: Using Test Script
 
+#### Linux/macOS
 ```bash
 # Give execution permission to the script
 chmod +x test.sh
@@ -53,28 +120,33 @@ chmod +x test.sh
 ./test.sh jetbrains
 ```
 
-### Method 2: Manual Environment Variables
+#### Windows
+```cmd
+# Run test script
+test.bat [ide_type] [mcp_server_port] [mcp_server]
 
-1. Copy the environment variable configuration file:
-
-```bash
-cp .claude.example .env
+# Example:
+test.bat jetbrains 63342 127.0.0.1
 ```
 
-2. Modify the `.env` file as needed:
+### Method 2: Manual Environment Variables
+
+The `.claude.example.json` file in this repository contains a sample configuration for Claude Desktop. For manual testing with environment variables:
+
+1. Set environment variables directly:
 
 ```bash
 # Enable logging
-LOG_ENABLED=true
+export LOG_ENABLED=true
 # Set IDE type ('jetbrains' or 'vscode')
-IDE_TYPE=jetbrains
+export IDE_TYPE=jetbrains
 # Optionally specify MCP server address
-# MCP_SERVER=127.0.0.1
+# export MCP_SERVER=127.0.0.1
 # Optionally specify MCP server port
-# MCP_SERVER_PORT=63342
+# export MCP_SERVER_PORT=63342
 ```
 
-3. Run the bundled application:
+2. Run the bundled application:
 
 ```bash
 node dist/bundle.js
@@ -108,9 +180,12 @@ This means you can start MCP x Hub and IDE in any order, and the system will aut
 
 ## Connection Priority
 
-1. MCP_SERVER_PORT (if set)
-2. Scan port range based on IDE type
-3. If IDE_TYPE not set, try JetBrains port range as default
+1. MCP_SERVER_PORT (if set) - Checks the specific port provided
+2. Cached endpoint - Reuses previously successful connection 
+3. Scan port range based on IDE_TYPE:
+   - For jetbrains: Ports 63342-63352
+   - For vscode: Ports 9960-9990
+4. If IDE_TYPE is invalid or not set, tries JetBrains port range (63342-63352) as default
 
 ## Troubleshooting
 
@@ -119,35 +194,9 @@ This means you can start MCP x Hub and IDE in any order, and the system will aut
 3. Enable LOG_ENABLED=true to see detailed logs
 4. For JetBrains IDE, default port is 63342
 
-## Future Development Plans
-
-### Short-Term Goals (Next 1-2 releases)
-
-- Add support for secure connections (HTTPS)
-- Implement better error reporting and diagnostics
-- Add configuration file support
-- Create comprehensive test suite
-- Improve logging with different log levels
-
-### Medium-Term Goals (3-6 months)
-
-- Support for multiple simultaneous IDE connections
-- Web-based admin UI for configuration and monitoring
-- Performance optimizations for high-volume tool calls
-- Docker container for easier deployment
-- Plugin system for extending functionality
-
-### Long-Term Goals (6+ months)
-
-- Full MCP 2.0 protocol support when released
-- Extended IDE support for additional editors
-- Cross-language tooling support
-- Analytics and metrics collection (opt-in)
-- Distributed deployment options for enterprise environments
-
 ## Technical Documentation
 
-For detailed technical information, development guidelines, and integration instructions, see [Technical Guide](docs/technical-guide.md).
+For detailed technical information, development guidelines, and integration instructions, see the docs directory.
 
 ## Contributing
 
