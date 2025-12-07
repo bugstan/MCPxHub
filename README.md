@@ -6,7 +6,6 @@
 
 [![npm version](https://img.shields.io/npm/v/@bugstan/mcpxhub.svg)](https://www.npmjs.com/package/@bugstan/mcpxhub)
 [![npm downloads](https://img.shields.io/npm/dt/@bugstan/mcpxhub.svg)](https://www.npmjs.com/package/@bugstan/mcpxhub)
-[![Smithery](https://smithery.ai/badge/@n2ns/mcpxhub)](https://smithery.ai/server/@n2ns/mcpxhub)
 [![MCP Compliant](https://img.shields.io/badge/MCP-JSON--RPC%202.0-blue)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
