@@ -8,6 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP Compliant](https://img.shields.io/badge/MCP-JSON--RPC%202.0-blue)](https://modelcontextprotocol.io)
 
+> **Current Version: v1.1.0**
+
 ## 🚀 Why MCP x Hub?
 
 While Claude Desktop is powerful, it's isolated from your codebase. **MCP x Hub** bridges this gap. It acts as a smart gateway, auto-discovering your running IDE instances and proxying MCP tool calls securely.
