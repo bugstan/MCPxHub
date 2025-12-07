@@ -47,16 +47,26 @@ function sendToolsChanged() {
 export async function testListTools(endpoint: string): Promise<boolean> {
     debug(`Testing endpoint ${endpoint} for availability`);
     try {
-        log(`Sending test request to ${endpoint}/mcp/list_tools`);
-        const res = await fetch(`${endpoint}/mcp/list_tools`);
+        log(`Sending test request to ${endpoint}`);
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                method: "tools/list",
+                id: "discovery-check"
+            })
+        });
         
         if (!res.ok) {
-            warn(`Test request to ${endpoint}/mcp/list_tools failed with status ${res.status}`);
+            warn(`Test request to ${endpoint} failed with status ${res.status}`);
             return false;
         }
 
         const currentResponse = await res.text();
-        debug(`Received response from ${endpoint}/mcp/list_tools: ${currentResponse.substring(0, 100)}...`);
+        debug(`Received response from ${endpoint}: ${currentResponse.substring(0, 100)}...`);
 
         if (previousResponse !== null && previousResponse !== currentResponse) {
             log("Tool list response has changed since the last check");
@@ -82,7 +92,7 @@ export async function findWorkingIDEEndpoint(): Promise<string> {
 
     if (MCP_SERVER_PORT) {
         log(`MCP_SERVER_PORT is set to ${MCP_SERVER_PORT}. Testing this port first.`);
-        const testEndpoint = `http://${MCP_SERVER}:${MCP_SERVER_PORT}/api`;
+        const testEndpoint = `http://${MCP_SERVER}:${MCP_SERVER_PORT}`;
         if (await testListTools(testEndpoint)) {
             success(`MCP_SERVER_PORT ${MCP_SERVER_PORT} is working - using endpoint ${testEndpoint}`);
             return testEndpoint;
@@ -105,18 +115,33 @@ export async function findWorkingIDEEndpoint(): Promise<string> {
         portRange = PORT_RANGES[IDE_TYPE];
     }
     
-    log(`Scanning port range: ${portRange.start}-${portRange.end}`);
 
+
+    log(`Scanning port range: ${portRange.start}-${portRange.end} (Parallel)`);
+
+    // Generate all candidate promises
+    const checkPromises = [];
     for (let port = portRange.start; port <= portRange.end; port++) {
-        const candidateEndpoint = `http://${MCP_SERVER}:${port}/api`;
-        debug(`Testing port ${port}...`);
-        const isWorking = await testListTools(candidateEndpoint);
-        if (isWorking) {
-            success(`Found working endpoint at ${candidateEndpoint}`);
-            return candidateEndpoint;
-        } else {
-            debug(`Port ${port} is not responding correctly.`);
-        }
+        const candidateEndpoint = `http://${MCP_SERVER}:${port}`;
+        // We wrap the test promise to return the endpoint logic if successful, 
+        // or reject if failed, suitable for Promise.any
+        const promise = (async () => {
+            const isWorking = await testListTools(candidateEndpoint);
+            if (isWorking) {
+                return candidateEndpoint;
+            }
+            throw new Error(`Port ${port} not available`);
+        })();
+        checkPromises.push(promise);
+    }
+
+    try {
+        // Wait for the FIRST successful connection
+        const workingEndpoint = await Promise.any(checkPromises);
+        success(`Found working endpoint at ${workingEndpoint}`);
+        return workingEndpoint;
+    } catch (aggregateError) {
+        debug(`No working ports found in range ${portRange.start}-${portRange.end}`);
     }
 
     retryCount++;

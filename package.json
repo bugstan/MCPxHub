@@ -1,10 +1,10 @@
 {
   "name": "@bugstan/mcpxhub",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "publishConfig": {
     "access": "public"
   },
-  "description": "A MCP hub to redirect requests to local IDE extension instances",
+  "description": "The ultimate MCP middleware connecting Claude Desktop to VS Code, Cursor, Antigravity, Windsurf, and JetBrains IDEs. Unlock standard agentic coding capabilities across all your editors.",
   "main": "dist/src/index.js",
   "type": "module",
   "license": "MIT",
@@ -14,11 +14,29 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "claude",
+    "claude-desktop",
     "ai",
+    "ai-agent",
+    "coding-assistant",
     "ide",
     "jetbrains",
-    "vscode"
+    "vscode",
+    "intellij",
+    "webstorm",
+    "cursor-alternative",
+    "middleware",
+    "bridge",
+    "developer-tools",
+    "productivity",
+    "json-rpc",
+    "cursor",
+    "windsurf",
+    "antigravity",
+    "cursor-ai",
+    "codeium",
+    "ide-bridge"
   ],
   "author": "Bugstan",
   "bugs": {

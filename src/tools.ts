@@ -7,10 +7,10 @@
  * forwarding requests, processing responses, and error handling.
  */
 
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { IDE_TYPE } from './config.js';
 import { debug, error, log, success, warn } from './logger.js';
-import { IDEResponse } from './types.js';
+import { JsonRpcResponse } from './types.js';
 
 export async function handleToolCall(name: string, args: any, endpoint: string): Promise<CallToolResult> {
     log(`====== TOOL CALL START: ${name} ======`);
@@ -20,23 +20,24 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
     debug(`Request arguments: ${JSON.stringify(args, null, 2)}`);
     
     try {
-        const requestUrl = `${endpoint}/mcp/${name}`;
-        debug(`Request URL: ${requestUrl}`);
-        
-        const requestBody = JSON.stringify(args);
-        debug(`Request body: ${requestBody}`);
-        
-        debug(`Sending request...`);
-        const response = await fetch(requestUrl, {
+        debug(`Sending JSON-RPC request...`);
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
             },
-            body: requestBody,
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                method: "tools/call",
+                params: {
+                    name,
+                    arguments: args
+                },
+                id: `call-${Date.now()}`
+            }),
         });
 
         debug(`Response status: ${response.status} ${response.statusText}`);
-        debug(`Response headers: ${JSON.stringify(Object.fromEntries([...response.headers]))}`);
 
         if (!response.ok) {
             error(`Response failed with status ${response.status} for tool ${name}`);
@@ -44,36 +45,42 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
         }
 
         const rawResponseText = await response.text();
-        debug(`Raw response: ${rawResponseText}`);
+        debug(`Raw response: ${rawResponseText.substring(0, 500)}...`);
         
-        let parsedResponse;
+        let parsedResponse: JsonRpcResponse;
         try {
             parsedResponse = JSON.parse(rawResponseText);
-            debug(`Parsed response: ${JSON.stringify(parsedResponse, null, 2)}`);
         } catch (jsonError) {
             error(`Failed to parse response as JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
-            parsedResponse = { status: rawResponseText, error: null };
-            debug(`Using raw text as status: ${rawResponseText}`);
+            throw new Error("Invalid JSON response from IDE");
         }
 
-        const {status, error: responseError} = parsedResponse as IDEResponse;
+        if (parsedResponse.error) {
+            warn(`Tool call resulted in error: ${parsedResponse.error.message}`);
+            return {
+                content: [{
+                    type: "text",
+                    text: `Error: ${parsedResponse.error.message}`
+                }],
+                isError: true,
+            };
+        }
         
-        const isError = !!responseError;
-        const text = status ?? responseError ?? "";
+        // Success case - result should be a CallToolResult
+        const result = parsedResponse.result as CallToolResult;
         
-        if (isError) {
-            warn(`Tool call resulted in error: ${responseError}`);
-        } else {
-            success(`Tool call completed successfully`);
-            debug(`Response text: ${typeof text === 'string' ? text.substring(0, 200) : JSON.stringify(text).substring(0, 200)}${text && text.length > 200 ? '...' : ''}`);
+        if (!result) {
+            warn("Response had no result field");
+            return {
+                content: [],
+                isError: true
+            };
         }
 
+        success(`Tool call completed successfully`);
         log(`====== TOOL CALL END: ${name} ======`);
         
-        return {
-            content: [{type: "text", text: text}],
-            isError,
-        };
+        return result;
     } catch (err) {
         error(`====== TOOL CALL ERROR: ${name} ======`);
         error(`Error in handleToolCall: ${err}`);
@@ -92,13 +99,23 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
     }
 }
 
-export async function fetchToolsList(endpoint: string): Promise<{tools: any}> {
+export async function fetchToolsList(endpoint: string): Promise<{tools: Tool[]}> {
     log(`====== FETCHING TOOLS LIST ======`);
     debug(`Using endpoint ${endpoint} to list tools`);
     
     try {
-        debug(`Sending request to ${endpoint}/mcp/list_tools`);
-        const toolsResponse = await fetch(`${endpoint}/mcp/list_tools`);
+        debug(`Sending JSON-RPC request to ${endpoint}`);
+        const toolsResponse = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                method: "tools/list",
+                id: `list-${Date.now()}`
+            })
+        });
         
         debug(`Response status: ${toolsResponse.status} ${toolsResponse.statusText}`);
         
@@ -110,17 +127,28 @@ export async function fetchToolsList(endpoint: string): Promise<{tools: any}> {
         const rawResponse = await toolsResponse.text();
         debug(`Raw tools list response: ${rawResponse.substring(0, 500)}${rawResponse.length > 500 ? '...' : ''}`);
         
-        let tools;
+        let parsedResponse: JsonRpcResponse;
         try {
-            tools = JSON.parse(rawResponse);
+            parsedResponse = JSON.parse(rawResponse);
             success(`Successfully parsed tools list JSON`);
         } catch (jsonError) {
             error(`Failed to parse tools list as JSON: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
             throw new Error(`Invalid tools list response: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
         }
+
+        if (parsedResponse.error) {
+            throw new Error(`IDE returned error: ${parsedResponse.error.message}`);
+        }
         
-        const toolCount = Array.isArray(tools) ? tools.length : 'unknown (not an array)';
-        success(`Found ${toolCount} tools`);
+        const result = parsedResponse.result;
+        const tools = result?.tools;
+
+        if (!Array.isArray(tools)) {
+            error("Response result.tools is not an array");
+            throw new Error("Invalid format: tools list is missing or invalid");
+        }
+        
+        success(`Found ${tools.length} tools`);
         debug(`Tools details: ${JSON.stringify(tools, null, 2)}`);
         
         log(`====== TOOLS LIST FETCHED ======`);
