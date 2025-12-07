@@ -1,0 +1,19 @@
+startCommand:
+  type: stdio
+  command: node
+  args:
+    - dist/src/index.js
+installCommand:
+  type: stdio
+  command: npm
+  args:
+    - install
+buildCommand:
+  type: stdio
+  command: npm
+  args:
+    - run
+    - build
+docUrl: "https://github.com/n2ns/MCPxHub#readme"
+repository: "https://github.com/n2ns/MCPxHub"
+

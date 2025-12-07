@@ -5,8 +5,10 @@
 **MCP x Hub** is the ultimate middleware bridge that seamlessly connects AI Assistants (like **Claude Desktop**) to your local development environment. By adhering to the **Model Context Protocol (MCP)**, it empowers your AI to read files, execute terminal commands, and analyze code directly within **VS Code**, **Cursor**, **Windsurf**, **Antigravity**, and **JetBrains** IDEs.
 
 [![npm version](https://img.shields.io/npm/v/@bugstan/mcpxhub.svg)](https://www.npmjs.com/package/@bugstan/mcpxhub)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm downloads](https://img.shields.io/npm/dt/@bugstan/mcpxhub.svg)](https://www.npmjs.com/package/@bugstan/mcpxhub)
+[![Smithery](https://smithery.ai/badge/@n2ns/mcpxhub)](https://smithery.ai/server/@n2ns/mcpxhub)
 [![MCP Compliant](https://img.shields.io/badge/MCP-JSON--RPC%202.0-blue)](https://modelcontextprotocol.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Current Version: v1.1.0**
 
@@ -30,8 +32,8 @@ Get your AI Agent coding in minutes:
     ```
 
 2.  **Install Your IDE Plugin**:
-    *   **VS Code**: [ggMCP4VSCode](https://github.com/bugstan/ggMCP4VSCode)
-    *   **JetBrains**: [MCP Server Plugin](https://github.com/bugstan/mcp-server-plugin)
+    *   **VS Code**: [ggMCP4VSCode](https://github.com/n2ns/ggMCP4VSCode)
+    *   **JetBrains**: [MCP Server Plugin](https://github.com/n2ns/mcp-server-plugin)
 
 3.  **Configure Claude Desktop**:
     Edit your `claude_desktop_config.json`:
@@ -66,11 +68,11 @@ Get your AI Agent coding in minutes:
 MCP x Hub requires an MCP server plugin installed in your IDE to function:
 
 ### VS Code Plugin
-- **Plugin**: [ggMCP4VSCode](https://github.com/bugstan/ggMCP4VSCode)
+- **Plugin**: [ggMCP4VSCode](https://github.com/n2ns/ggMCP4VSCode)
 - **Features**: Implements MCP server in VS Code, allowing communication with Claude Desktop through MCP x Hub
 
 ### JetBrains Plugin
-- **Plugin**: [MCP Server Plugin](https://github.com/bugstan/mcp-server-plugin)
+- **Plugin**: [MCP Server Plugin](https://github.com/n2ns/mcp-server-plugin)
 - **Compatible IDEs**: IntelliJ IDEA, WebStorm, PyCharm, PhpStorm, and other JetBrains IDEs
 - **Features**: Implements MCP server in JetBrains IDEs, enabling Claude integration
 
@@ -89,7 +91,7 @@ npm install @bugstan/mcpxhub
 
 ```bash
 # Clone the repository
-git clone https://github.com/bugstan/MCPxHub.git
+git clone https://github.com/n2ns/MCPxHub.git
 cd MCPxHub
 
 # Install dependencies
@@ -166,9 +168,9 @@ node dist/bundle.js
 MCP x Hub now includes an automatic reconnection mechanism:
 
 - Even if IDE is not started yet when MCP x Hub starts, the program will continue running and wait for IDE to start
-- Attempts to reconnect every 10 seconds
-- Gives up after 30 attempts (approximately 5 minutes)
-- If connection was previously successful but later disconnected, will continue trying to reconnect
+- Attempts to reconnect every 10 seconds indefinitely
+- Continuously attempts to connect without timeout, ensuring stability even if the IDE starts late
+- If connection was previously successful but later disconnected, uses fast recovery to reconnect immediately
 - Displays friendly status messages during reconnection process
 
 This means you can start MCP x Hub and IDE in any order, and the system will automatically establish a connection.

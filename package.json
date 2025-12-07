@@ -10,7 +10,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bugstan/MCPxHub.git"
+    "url": "git+https://github.com/n2ns/MCPxHub.git"
   },
   "keywords": [
     "mcp",
@@ -40,9 +40,9 @@
   ],
   "author": "Bugstan",
   "bugs": {
-    "url": "https://github.com/bugstan/MCPxHub/issues"
+    "url": "https://github.com/n2ns/MCPxHub/issues"
   },
-  "homepage": "https://github.com/bugstan/MCPxHub#readme",
+  "homepage": "https://github.com/n2ns/MCPxHub#readme",
   "bin": {
     "mcpxhub": "dist/src/index.js"
   },
