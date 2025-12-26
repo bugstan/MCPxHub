@@ -6,7 +6,7 @@ This document covers the build, release, and publishing process for the MCPxHub 
 
 ## Prerequisites
 
-- Node.js >= 16.x
+- Node.js >= 20.x
 - pnpm (recommended) or npm
 - npm account with publish access
 
@@ -196,4 +196,6 @@ pnpm bundle
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v1.0 | 2025-12-07 | Initial deployment guide |
+| v1.2.0 | 2025-12-26 | Enhanced test coverage (52 tests), code quality improvements, documentation updates |
+| v1.1.0 | 2025-12-26 | Performance optimizations, adaptive polling, request timeouts, Node.js 20+ requirement |
+| v1.0.0 | 2025-12-07 | Initial release |

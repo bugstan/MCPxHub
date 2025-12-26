@@ -1,6 +1,6 @@
 {
   "name": "@bugstan/mcpxhub",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publishConfig": {
     "access": "public"
   },
@@ -50,7 +50,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "build": "tsc && shx chmod +x dist/src/*.js",
@@ -59,16 +59,21 @@
     "bundle": "pnpm build && esbuild dist/src/index.js --bundle --platform=node --format=esm --outfile=dist/bundle.js && shx chmod +x dist/bundle.js",
     "bundle:npm": "npm run build && esbuild dist/src/index.js --bundle --platform=node --format=esm --outfile=dist/bundle.js && shx chmod +x dist/bundle.js",
     "prepublishOnly": "npm run bundle:npm",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.7.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
-    "esbuild": "^0.25.1",
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.0.3",
+    "esbuild": "^0.27.2",
+    "eslint": "^9.39.2",
+    "globals": "^16.5.0",
     "shx": "^0.4.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.1",
+    "vitest": "^4.0.16"
   }
 }

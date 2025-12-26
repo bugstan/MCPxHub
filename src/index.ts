@@ -12,46 +12,52 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { IDE_TYPE } from './config.js';
-import { cachedEndpoint, setNotificationCallback, updateIDEEndpoint } from './discovery.js';
+import { ConnectionManager } from './connection-manager.js';
 import { debug, error, log, success, warn } from './logger.js';
 import { getServer } from './server.js';
 import { fetchToolsList, handleToolCall } from './tools.js';
 
 const server = getServer();
+const connectionManager = new ConnectionManager();
 
 function sendToolsChanged() {
     try {
         log("Sending tools changed notification to client");
-        server.notification({method: "notifications/tools/list_changed"});
+        server.notification({ method: "notifications/tools/list_changed" });
         success("Tools changed notification sent successfully");
     } catch (err) {
         error("Error sending tools changed notification:", err);
     }
 }
 
-setNotificationCallback(sendToolsChanged);
+connectionManager.setNotificationCallback(sendToolsChanged);
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     log("Handling list tools request from client");
-    if (!cachedEndpoint) {
+    const endpoint = connectionManager.getCachedEndpoint();
+
+    if (!endpoint) {
         debug("No cached endpoint available, attempting to update endpoint");
-        await updateIDEEndpoint();
-        
-        if (!cachedEndpoint) {
+        await connectionManager.updateIDEEndpoint();
+        const newEndpoint = connectionManager.getCachedEndpoint();
+
+        if (!newEndpoint) {
             const waitMsg = `Waiting for IDE to start...`;
             warn(waitMsg);
             throw new Error(waitMsg);
         }
+        // Use the newly found endpoint immediately
+        return await fetchToolsList(newEndpoint);
     }
-    
+
     try {
-        debug(`Forwarding list tools request to cached endpoint: ${cachedEndpoint}`);
-        const result = await fetchToolsList(cachedEndpoint);
+        debug(`Forwarding list tools request to cached endpoint: ${endpoint}`);
+        const result = await fetchToolsList(endpoint);
         success("Successfully handled list tools request");
         return result;
     } catch (err) {
         error("Error handling list tools request:", err);
-        setTimeout(updateIDEEndpoint, 100);
+        setTimeout(() => connectionManager.updateIDEEndpoint(), 100);
         throw err;
     }
 });
@@ -59,36 +65,39 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     log(`Handling tool call request for tool: ${request.params.name}`);
     debug(`Tool call request details: ${JSON.stringify(request)}`);
-    
-    if (!cachedEndpoint) {
+
+    let endpoint = connectionManager.getCachedEndpoint();
+
+    if (!endpoint) {
         warn("No cached endpoint available, attempting to update endpoint");
-        await updateIDEEndpoint();
-        
-        if (!cachedEndpoint) {
+        await connectionManager.updateIDEEndpoint();
+        endpoint = connectionManager.getCachedEndpoint();
+
+        if (!endpoint) {
             error("Cannot handle tool call - no IDE connection available");
             throw new Error(`Not connected to IDE. Please ensure IDE is running with MCP plugin installed.`);
         }
     }
-    
+
     try {
-        debug(`Forwarding tool call to endpoint: ${cachedEndpoint}`);
+        debug(`Forwarding tool call to endpoint: ${endpoint}`);
         const result = await handleToolCall(
-            request.params.name, 
-            request.params.arguments ?? {}, 
-            cachedEndpoint
+            request.params.name,
+            request.params.arguments ?? {},
+            endpoint
         );
         success(`Tool call '${request.params.name}' handled successfully`);
         return result;
     } catch (err) {
         error(`Error handling tool call '${request.params.name}':`, err);
-        setTimeout(updateIDEEndpoint, 100);
+        setTimeout(() => connectionManager.updateIDEEndpoint(), 100);
         throw err;
     }
 });
 
 async function runServer() {
     log(`Initializing Local MCP x Hub for ${IDE_TYPE ? IDE_TYPE.toUpperCase() : 'IDE'}...`);
-    
+
     console.error(`
 ===================================================
 MCP x Hub Started
@@ -108,14 +117,26 @@ Searching for available IDE instances...
         throw err;
     }
 
-    setInterval(updateIDEEndpoint, 10_000);
-    log("Scheduled endpoint check every 10 seconds");
+    // Adaptive polling: fast when disconnected, slow when stable
+    const scheduleNextCheck = () => {
+        const isConnected = connectionManager.getCachedEndpoint() !== null;
+        // 5s when disconnected (quick reconnection), 30s when stable (reduce overhead)
+        const interval = isConnected ? 30_000 : 5_000;
+
+        setTimeout(async () => {
+            await connectionManager.updateIDEEndpoint();
+            scheduleNextCheck();
+        }, interval);
+    };
+
+    scheduleNextCheck();
+    log("Scheduled adaptive endpoint check (5s disconnected / 30s connected)");
 
     success(`Local MCP x Hub running and ready for connections`);
 }
 
 debug("Performing initial IDE endpoint discovery");
-await updateIDEEndpoint();
+await connectionManager.updateIDEEndpoint();
 
 runServer().catch(err => {
     error(`Server failed to start:`, err);

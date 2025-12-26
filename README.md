@@ -9,7 +9,7 @@
 [![MCP Compliant](https://img.shields.io/badge/MCP-JSON--RPC%202.0-blue)](https://modelcontextprotocol.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Current Version: v1.1.0**
+> **Current Version: v1.2.0**
 
 ## 🚀 Why MCP x Hub?
 
@@ -164,10 +164,10 @@ node dist/bundle.js
 
 ## Automatic Reconnection Feature
 
-MCP x Hub now includes an automatic reconnection mechanism:
+MCP x Hub now includes an automatic reconnection mechanism with adaptive polling:
 
 - Even if IDE is not started yet when MCP x Hub starts, the program will continue running and wait for IDE to start
-- Attempts to reconnect every 10 seconds indefinitely
+- **Adaptive polling**: 5 seconds when disconnected (quick reconnection), 30 seconds when stable (reduced overhead)
 - Continuously attempts to connect without timeout, ensuring stability even if the IDE starts late
 - If connection was previously successful but later disconnected, uses fast recovery to reconnect immediately
 - Displays friendly status messages during reconnection process

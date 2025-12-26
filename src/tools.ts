@@ -10,17 +10,22 @@
 import { CallToolResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { IDE_TYPE } from './config.js';
 import { debug, error, log, success, warn } from './logger.js';
-import { JsonRpcResponse } from './types.js';
+import { JsonRpcResponse, ToolsListResult } from './types.js';
 
-export async function handleToolCall(name: string, args: any, endpoint: string): Promise<CallToolResult> {
+export async function handleToolCall(name: string, args: Record<string, unknown>, endpoint: string): Promise<CallToolResult> {
     log(`====== TOOL CALL START: ${name} ======`);
     debug(`Tool name: ${name}`);
     debug(`IDE type: ${IDE_TYPE}`);
     debug(`Endpoint: ${endpoint}`);
     debug(`Request arguments: ${JSON.stringify(args, null, 2)}`);
-    
+
     try {
         debug(`Sending JSON-RPC request...`);
+
+        // 30s timeout for tool calls - operations may take time but shouldn't hang indefinitely
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
@@ -35,7 +40,10 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
                 },
                 id: `call-${Date.now()}`
             }),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         debug(`Response status: ${response.status} ${response.statusText}`);
 
@@ -46,7 +54,7 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
 
         const rawResponseText = await response.text();
         debug(`Raw response: ${rawResponseText.substring(0, 500)}...`);
-        
+
         let parsedResponse: JsonRpcResponse;
         try {
             parsedResponse = JSON.parse(rawResponseText);
@@ -65,10 +73,10 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
                 isError: true,
             };
         }
-        
+
         // Success case - result should be a CallToolResult
         const result = parsedResponse.result as CallToolResult;
-        
+
         if (!result) {
             warn("Response had no result field");
             return {
@@ -79,7 +87,7 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
 
         success(`Tool call completed successfully`);
         log(`====== TOOL CALL END: ${name} ======`);
-        
+
         return result;
     } catch (err) {
         error(`====== TOOL CALL ERROR: ${name} ======`);
@@ -88,7 +96,7 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
             error(`Error message: ${err.message}`);
             error(`Error stack: ${err.stack}`);
         }
-        
+
         return {
             content: [{
                 type: "text",
@@ -99,12 +107,17 @@ export async function handleToolCall(name: string, args: any, endpoint: string):
     }
 }
 
-export async function fetchToolsList(endpoint: string): Promise<{tools: Tool[]}> {
+export async function fetchToolsList(endpoint: string): Promise<{ tools: Tool[] }> {
     log(`====== FETCHING TOOLS LIST ======`);
     debug(`Using endpoint ${endpoint} to list tools`);
-    
+
     try {
         debug(`Sending JSON-RPC request to ${endpoint}`);
+
+        // 10s timeout for listing tools - should be quick operation
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
         const toolsResponse = await fetch(endpoint, {
             method: "POST",
             headers: {
@@ -114,20 +127,22 @@ export async function fetchToolsList(endpoint: string): Promise<{tools: Tool[]}>
                 jsonrpc: "2.0",
                 method: "tools/list",
                 id: `list-${Date.now()}`
-            })
+            }),
+            signal: controller.signal
         });
-        
+
+        clearTimeout(timeoutId);
         debug(`Response status: ${toolsResponse.status} ${toolsResponse.statusText}`);
-        
+
         if (!toolsResponse.ok) {
             error(`Failed to fetch tools with status ${toolsResponse.status}`);
             throw new Error("Unable to list tools");
         }
-        
+
         const rawResponse = await toolsResponse.text();
         debug(`Raw tools list response: ${rawResponse.substring(0, 500)}${rawResponse.length > 500 ? '...' : ''}`);
-        
-        let parsedResponse: JsonRpcResponse;
+
+        let parsedResponse: JsonRpcResponse<ToolsListResult>;
         try {
             parsedResponse = JSON.parse(rawResponse);
             success(`Successfully parsed tools list JSON`);
@@ -139,20 +154,19 @@ export async function fetchToolsList(endpoint: string): Promise<{tools: Tool[]}>
         if (parsedResponse.error) {
             throw new Error(`IDE returned error: ${parsedResponse.error.message}`);
         }
-        
-        const result = parsedResponse.result;
-        const tools = result?.tools;
+
+        const tools = parsedResponse.result?.tools;
 
         if (!Array.isArray(tools)) {
             error("Response result.tools is not an array");
             throw new Error("Invalid format: tools list is missing or invalid");
         }
-        
+
         success(`Found ${tools.length} tools`);
         debug(`Tools details: ${JSON.stringify(tools, null, 2)}`);
-        
+
         log(`====== TOOLS LIST FETCHED ======`);
-        return {tools};
+        return { tools };
     } catch (err) {
         error(`====== TOOLS LIST ERROR ======`);
         error(`Error fetching tools list: ${err}`);

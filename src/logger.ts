@@ -9,53 +9,46 @@
 
 import { LOG_ENABLED } from './config.js';
 
-const Colors = {
-    reset: "\x1b[0m",
-    red: "\x1b[31m",
-    green: "\x1b[32m",
-    yellow: "\x1b[33m",
-    blue: "\x1b[34m",
-    magenta: "\x1b[35m",
-    cyan: "\x1b[36m",
-    gray: "\x1b[90m"
-};
 
 function getTimestamp(): string {
     const now = new Date();
-    return `[${now.toISOString().replace('T', ' ').replace('Z', '')}]`;
+    return now.toISOString();
 }
 
-export function log(...args: any[]) {
+function formatMessage(level: string, message: string, ...args: unknown[]) {
+    const timestamp = getTimestamp();
+    const formattedArgs = args.length > 0 ? args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+    ).join(' ') : '';
+
+    // In production (stdio transport), we must write logs to stderr to avoid interfering with JSON-RPC on stdout
+    const logOutput = `[${timestamp}] [${level}] ${message} ${formattedArgs}`.trim();
+    console.error(logOutput);
+}
+
+export function log(message: string, ...args: unknown[]) {
     if (LOG_ENABLED) {
-        const timestamp = getTimestamp();
-        console.error(`${Colors.gray}${timestamp}${Colors.reset} ${Colors.blue}[INFO]${Colors.reset}`, ...args);
+        formatMessage('INFO', message, ...args);
     }
 }
 
-export function warn(...args: any[]) {
+export function error(message: string, ...args: unknown[]) {
+    // Errors are always logged
+    formatMessage('ERROR', message, ...args);
+}
+
+export function debug(message: string, ...args: unknown[]) {
     if (LOG_ENABLED) {
-        const timestamp = getTimestamp();
-        console.error(`${Colors.gray}${timestamp}${Colors.reset} ${Colors.yellow}[WARN]${Colors.reset}`, ...args);
+        formatMessage('DEBUG', message, ...args);
     }
 }
 
-export function error(...args: any[]) {
+export function success(message: string, ...args: unknown[]) {
     if (LOG_ENABLED) {
-        const timestamp = getTimestamp();
-        console.error(`${Colors.gray}${timestamp}${Colors.reset} ${Colors.red}[ERROR]${Colors.reset}`, ...args);
+        formatMessage('SUCCESS', message, ...args);
     }
 }
 
-export function debug(...args: any[]) {
-    if (LOG_ENABLED) {
-        const timestamp = getTimestamp();
-        console.error(`${Colors.gray}${timestamp}${Colors.reset} ${Colors.cyan}[DEBUG]${Colors.reset}`, ...args);
-    }
-}
-
-export function success(...args: any[]) {
-    if (LOG_ENABLED) {
-        const timestamp = getTimestamp();
-        console.error(`${Colors.gray}${timestamp}${Colors.reset} ${Colors.green}[SUCCESS]${Colors.reset}`, ...args);
-    }
+export function warn(message: string, ...args: unknown[]) {
+    formatMessage('WARN', message, ...args);
 }

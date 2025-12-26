@@ -7,11 +7,10 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { IDE_TYPE } from './config.js';
 import { debug, error, log } from './logger.js';
 import { fileURLToPath } from 'url';
-import { dirname, resolve, join } from 'path';
+import { dirname, join } from 'path';
 import fs from 'fs';
 
 // 获取版本号的安全函数
@@ -24,25 +23,29 @@ function getPackageVersion(): string {
             join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'),       // 上一级目录
             join(dirname(process.execPath), 'package.json')      // 执行路径
         ];
-        
+
         for (const path of possiblePaths) {
             if (fs.existsSync(path)) {
                 const packageJson = JSON.parse(fs.readFileSync(path, 'utf8'));
                 debug(`Found package.json at: ${path}`);
-                return packageJson.version || '1.0.5';
+                return packageJson.version || '1.2.0';
             }
         }
-        
+
         // 找不到 package.json 时使用默认版本
-        debug('Could not find package.json, using default version: 1.0.5');
-        return '1.0.5';  // 发生错误时的默认版本
+        debug('Could not find package.json, using default version: 1.2.0');
+        return '1.2.0';  // default version when package.json not found
     } catch (err) {
         error('Error reading package version:', err);
-        return '1.0.5';  // 发生错误时的默认版本
+        return '1.2.0';  // default version on error
     }
 }
 
 let server: Server | null = null;
+
+export function resetServerInstance() {
+    server = null;
+}
 
 export function getServer(): Server {
     if (!server) {
@@ -67,21 +70,6 @@ export function getServer(): Server {
     } else {
         debug("Returning existing MCP server instance");
     }
-    
-    return server;
-}
 
-export function setupRequestHandlers(
-    handleToolListRequest: () => Promise<{tools: any}>,
-    handleToolCallRequest: (request: any) => Promise<any>
-) {
-    const serverInstance = getServer();
-    
-    debug("Setting up request handlers for MCP server");
-    
-    serverInstance.setRequestHandler(ListToolsRequestSchema, handleToolListRequest);
-    log("Registered handler for ListToolsRequestSchema");
-    
-    serverInstance.setRequestHandler(CallToolRequestSchema, handleToolCallRequest);
-    log("Registered handler for CallToolRequestSchema");
+    return server;
 }

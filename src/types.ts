@@ -6,6 +6,8 @@
  * This module centralizes all TypeScript type definitions used throughout the application.
  */
 
+import { Tool } from '@modelcontextprotocol/sdk/types.js';
+
 export type IDEType = 'vscode' | 'jetbrains';
 
 export interface PortRange {
@@ -17,16 +19,20 @@ export interface JsonRpcRequest {
     jsonrpc: '2.0';
     id?: string | number | null;
     method: string;
-    params?: Record<string, any>;
+    params?: Record<string, unknown>;
 }
 
-export interface JsonRpcResponse {
+export interface ToolsListResult {
+    tools: Tool[];
+}
+
+export interface JsonRpcResponse<T = unknown> {
     jsonrpc: '2.0';
     id: string | number | null;
-    result?: any;
+    result?: T;
     error?: {
         code: number;
         message: string;
-        data?: any;
+        data?: unknown;
     };
 }
