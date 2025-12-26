@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -24,15 +25,17 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-        # 移除了 --frozen-lockfile 标志
 
       - name: Build package with pnpm
         run: pnpm bundle
 
       - name: Publish to NPM using Trusted Publisher
         run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Upload npm logs
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: npm-debug-logs
